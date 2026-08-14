@@ -21,50 +21,37 @@ Financial criminals and money-laundering syndicates evade traditional transactio
 
 ## 2. Graph Data Model
 
-[:USED_DEVICE]
-            ┌────────────────────────────────────┐
-            │  - lastSeen: String (ISO 8601)     │
-            ▼                                    │
-    ┌───────────────┐                            │
-    │    Device     │                            │
-    ├───────────────┤                            │
-    │  fingerprint  │                            │
-    │  os           │                            │
-    │  type         │                            │
-    └───────────────┘                            │
-                                                 │
-    ┌───────────────┐                            │
-    │   IPAddress   │                            │
-    ├───────────────┤                            │
-    │  address      │                            │
-    │  isp          │                            │
-    │  country      │                            │
-    └───────────────┘                            │
-            ▲                                    │
-            │                                    │
-            └────────────────────┐               │
-           [:LOGGED_IN_FROM]     │               │
-            - loginCount: Int    │               │
-                                 │               │
-                          ┌──────────────┐       │
-                          │   Account    │───────┘
-                          ├──────────────┤
-                          │  id          │
-                          │  holderName  │
-                          │  riskScore   │
-                          │  balance     │
-                          │  status      │
-                          └──────┬───────┘
-                                 │
-                 [:TRANSFERRED_TO]
-                 - amount: Float
-                 - timestamp: String
-                 - txnId: String
-                                 │
-                                 ▼
-                          ┌──────────────┐
-                          │   Account    │
-                          └──────────────┘
+```text
+                      [:USED_DEVICE {lastSeen}]
+            ┌─────────────────────────────────────────┐
+            │                                         │
+            ▼                                         │
+   ┌─────────────────┐                                │
+   │     Device      │                                │
+   │  (fingerprint)  │                                │
+   └─────────────────┘                                │
+                                                      │
+   ┌─────────────────┐                                │
+   │    IPAddress    │                                │
+   │    (address)    │                                │
+   └─────────────────┘                                │
+            ▲                                         │
+            │                                         │
+            └────────────────────────┐                │
+           [:LOGGED_IN_FROM {count}] │                │
+                                     │                │
+                             ┌──────────────┐         │
+                             │   Account    │─────────┘
+                             │  (id, name)  │
+                             └──────┬───────┘
+                                    │
+                 [:TRANSFERRED_TO {amount, txnId}]
+                                    │
+                                    ▼
+                             ┌──────────────┐
+                             │   Account    │
+                             └──────────────┘
+```
 
 ### Nodes
 * **`Account`**: `id` (String), `holderName` (String), `riskScore` (Integer), `balance` (Float), `status` (String)
