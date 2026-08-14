@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SynapseRisk — Java Spring Boot & CognoDB</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50 p-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-indigo-600 rounded font-bold">SR</div>
+        <div>
+          <h1 class="font-bold text-base">SynapseRisk (Spring Boot + CognoDB)</h1>
+          <p class="text-xs text-slate-400">Financial Crime & Mule Account Detector</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="db-badge" class="px-3 py-1 text-xs rounded-full bg-yellow-500/10 text-yellow-400">Checking DB...</span>
+        <button onclick="reSeed()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700">Re-Seed</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <h2 class="font-semibold mb-3 text-sm">Accounts Directory</h2>
+      <div id="account-list" class="space-y-2 max-h-[600px] overflow-y-auto pr-1"></div>
+    </div>
+
+    <div class="lg:col-span-2 space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="font-bold mb-1">Multi-Hop Traversal Explorer</h3>
+        <p class="text-xs text-slate-400 mb-3">Traces transaction flow paths up to 4 hops in CognoDB</p>
+        <div id="traversal-results" class="bg-slate-950 p-4 rounded text-sm text-slate-400">
+          Select "Trace" on any account on the left to run dynamic multi-hop Cypher traversal.
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-900 border border-red-900/40 rounded-xl p-4">
+          <h4 class="text-sm font-bold text-red-400 mb-2">Circular Laundering Rings</h4>
+          <div id="rings-container" class="text-xs space-y-2"></div>
+        </div>
+
+        <div class="bg-slate-900 border border-amber-900/40 rounded-xl p-4">
+          <h4 class="text-sm font-bold text-amber-400 mb-2">Shared Infrastructure Collusion</h4>
+          <div id="infra-container" class="text-xs space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function init() {
+      try {
+        const h = await (await fetch('/api/health')).json();
+        document.getElementById('db-badge').innerText = h.status === 'HEALTHY' ? '● CognoDB Connected' : '● Disconnected';
+        document.getElementById('db-badge').className = h.status === 'HEALTHY' ? 'px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-400' : 'px-3 py-1 text-xs rounded-full bg-rose-500/10 text-rose-400';
+      } catch(e) {}
+
+      const accs = await (await fetch('/api/accounts')).json();
+      document.getElementById('account-list').innerHTML = accs.map(a => `
+        <div class="p-3 bg-slate-950 rounded flex justify-between items-center text-xs border border-slate-800/80">
+          <div>
+            <p class="font-bold text-slate-200">${a.name} <span class="font-mono text-slate-500">(${a.id})</span></p>
+            <p class="text-slate-400">Risk Score: <b class="${a.riskScore > 75 ? 'text-red-400':'text-emerald-400'}">${a.riskScore}%</b> · Balance: $${a.balance.toLocaleString()}</p>
+          </div>
+          <button onclick="trace('${a.id}')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium">Trace</button>
+        </div>
+      `).join('');
+
+      const rings = await (await fetch('/api/investigate/fraud-rings')).json();
+      document.getElementById('rings-container').innerHTML = rings.map(r => `
+        <div class="p-2.5 bg-slate-950 rounded font-mono text-red-300 border border-red-950/60">
+          <p class="text-[11px] text-red-400 font-bold mb-1">Cycle Length: ${r.cycleLength} Hops</p>
+          ${r.accounts.join(' ➔ ')}
+        </div>
+      `).join('') || '<p class="text-slate-500">No circular rings detected</p>';
+
+      const infra = await (await fetch('/api/investigate/shared-infrastructure')).json();
+      document.getElementById('infra-container').innerHTML = infra.map(i => `
+        <div class="p-2.5 bg-slate-950 rounded text-amber-300 border border-amber-950/60">
+          <b>${i.type}</b>: <span class="font-mono text-slate-200">${i.identifier}</span><br>
+          <span class="text-slate-400 text-[11px]">Accounts: ${Array.from(i.linkedAccounts).join(', ')}</span>
+        </div>
+      `).join('') || '<p class="text-slate-500">No shared collusion detected</p>';
+    }
+
+    async function trace(id) {
+      const data = await (await fetch('/api/investigate/paths/' + id)).json();
+      const container = document.getElementById('traversal-results');
+      if (!data || data.length === 0) {
+        container.innerHTML = '<span class="text-slate-400">No multi-hop paths originating from ' + id + '</span>';
+        return;
+      }
+      container.innerHTML = data.map((d, i) => `
+        <div class="p-2.5 bg-slate-900 border border-slate-800 rounded mb-2 font-mono text-xs">
+          <div class="text-indigo-400 font-bold mb-1">Path #${i+1} (${d.hops} Hops)</div>
+          ${d.nodeChain.map(n => n.name + ' (' + n.id + ')').join(' ➔ ')}
+        </div>
+      `).join('');
+    }
+
+    async function reSeed() {
+      await fetch('/api/seed', { method: 'POST' });
+      init();
+    }
+
+    init();
+  </script>
+</body>
+</html>
