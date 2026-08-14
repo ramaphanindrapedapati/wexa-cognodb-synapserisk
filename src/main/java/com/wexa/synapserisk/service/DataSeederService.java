@@ -1,4 +1,4 @@
-﻿package com.wexa.synapserisk.service;
+package com.wexa.synapserisk.service;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
@@ -69,7 +69,8 @@ public class DataSeederService implements CommandLineRunner {
             session.run(seedQuery);
             System.out.println("✅ CognoDB graph database successfully seeded!");
         } catch (Exception e) {
-            System.err.println("❌ Seeding Error: " + e.getMessage());
+            System.err.println("❌ Seeding Error:");
+            e.printStackTrace();
         }
     }
 }

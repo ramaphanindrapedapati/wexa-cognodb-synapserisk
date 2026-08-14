@@ -1,4 +1,4 @@
-﻿package com.wexa.synapserisk.service;
+package com.wexa.synapserisk.service;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;

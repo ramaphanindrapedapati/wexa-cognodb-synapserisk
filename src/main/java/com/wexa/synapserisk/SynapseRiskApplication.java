@@ -1,4 +1,4 @@
-﻿package com.wexa.synapserisk;
+package com.wexa.synapserisk;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

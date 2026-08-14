@@ -1,4 +1,4 @@
-﻿package com.wexa.synapserisk.controller;
+package com.wexa.synapserisk.controller;
 
 import com.wexa.synapserisk.service.DataSeederService;
 import com.wexa.synapserisk.service.FraudDetectionService;
